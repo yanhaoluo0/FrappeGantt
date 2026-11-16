@@ -55,13 +55,18 @@ export class TaskStore {
                 id,
                 startDate: start,
                 endDate: end,
+                updatedAt: new Date().toISOString(),
             }),
         );
     }
 
     updateProgress(id, progress) {
         return this.enqueue(() =>
-            this.invoke('update_task_progress', { id, progress }),
+            this.invoke('update_task_progress', {
+                id,
+                progress,
+                updatedAt: new Date().toISOString(),
+            }),
         );
     }
 

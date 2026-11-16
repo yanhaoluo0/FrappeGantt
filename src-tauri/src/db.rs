@@ -1,0 +1,251 @@
+use rusqlite::Connection;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct Task {
+    pub(crate) id: String,
+    pub(crate) name: String,
+    pub(crate) start_date: String,
+    pub(crate) end_date: String,
+    pub(crate) progress: f64,
+    pub(crate) dependencies: Vec<String>,
+    pub(crate) notes: String,
+    pub(crate) sort_order: i64,
+    pub(crate) created_at: String,
+    pub(crate) updated_at: String,
+}
+
+pub(crate) fn init_schema(connection: &Connection) -> Result<(), String> {
+    connection
+        .execute_batch(
+            "
+            PRAGMA journal_mode = WAL;
+            PRAGMA synchronous = NORMAL;
+
+            CREATE TABLE IF NOT EXISTS tasks (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL DEFAULT '',
+                start_date TEXT NOT NULL DEFAULT '',
+                end_date TEXT NOT NULL DEFAULT '',
+                progress REAL NOT NULL DEFAULT 0,
+                dependencies TEXT NOT NULL DEFAULT '[]',
+                notes TEXT NOT NULL DEFAULT '',
+                sort_order INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT '',
+                updated_at TEXT NOT NULL DEFAULT ''
+            );
+            ",
+        )
+        .map_err(|error| error.to_string())
+}
+
+pub(crate) fn list_tasks(connection: &Connection) -> Result<Vec<Task>, String> {
+    let mut statement = connection
+        .prepare(
+            "
+            SELECT id, name, start_date, end_date, progress, dependencies,
+                   notes, sort_order, created_at, updated_at
+            FROM tasks
+            ORDER BY sort_order ASC, created_at ASC, id ASC
+            ",
+        )
+        .map_err(|error| error.to_string())?;
+
+    let tasks = statement
+        .query_map([], |row| {
+            let dependencies: String = row.get(5)?;
+            Ok(Task {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                start_date: row.get(2)?,
+                end_date: row.get(3)?,
+                progress: row.get(4)?,
+                dependencies: serde_json::from_str(&dependencies).unwrap_or_default(),
+                notes: row.get(6)?,
+                sort_order: row.get(7)?,
+                created_at: row.get(8)?,
+                updated_at: row.get(9)?,
+            })
+        })
+        .map_err(|error| error.to_string())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| error.to_string())?;
+
+    Ok(tasks)
+}
+
+pub(crate) fn save_task(connection: &Connection, task: &Task) -> Result<(), String> {
+    let dependencies =
+        serde_json::to_string(&task.dependencies).map_err(|error| error.to_string())?;
+
+    connection
+        .execute(
+            "
+            INSERT INTO tasks (
+                id, name, start_date, end_date, progress, dependencies,
+                notes, sort_order, created_at, updated_at
+            )
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+            ON CONFLICT(id) DO UPDATE SET
+                name = excluded.name,
+                start_date = excluded.start_date,
+                end_date = excluded.end_date,
+                progress = excluded.progress,
+                dependencies = excluded.dependencies,
+                notes = excluded.notes,
+                sort_order = excluded.sort_order,
+                updated_at = excluded.updated_at
+            ",
+            rusqlite::params![
+                task.id,
+                task.name,
+                task.start_date,
+                task.end_date,
+                task.progress,
+                dependencies,
+                task.notes,
+                task.sort_order,
+                task.created_at,
+                task.updated_at,
+            ],
+        )
+        .map(|_| ())
+        .map_err(|error| error.to_string())
+}
+
+pub(crate) fn update_task_dates(
+    connection: &Connection,
+    id: &str,
+    start_date: &str,
+    end_date: &str,
+    updated_at: &str,
+) -> Result<(), String> {
+    connection
+        .execute(
+            "
+            UPDATE tasks
+            SET start_date = ?2, end_date = ?3, updated_at = ?4
+            WHERE id = ?1
+            ",
+            rusqlite::params![id, start_date, end_date, updated_at],
+        )
+        .map(|_| ())
+        .map_err(|error| error.to_string())
+}
+
+pub(crate) fn update_task_progress(
+    connection: &Connection,
+    id: &str,
+    progress: f64,
+    updated_at: &str,
+) -> Result<(), String> {
+    connection
+        .execute(
+            "
+            UPDATE tasks
+            SET progress = ?2, updated_at = ?3
+            WHERE id = ?1
+            ",
+            rusqlite::params![id, progress, updated_at],
+        )
+        .map(|_| ())
+        .map_err(|error| error.to_string())
+}
+
+pub(crate) fn delete_task(connection: &Connection, id: &str) -> Result<(), String> {
+    connection
+        .execute("DELETE FROM tasks WHERE id = ?1", [id])
+        .map(|_| ())
+        .map_err(|error| error.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn memory_database() -> Connection {
+        let connection = Connection::open_in_memory().unwrap();
+        init_schema(&connection).unwrap();
+        connection
+    }
+
+    fn sample_task() -> Task {
+        Task {
+            id: "task-1".into(),
+            name: "整理需求".into(),
+            start_date: "2026-11-16".into(),
+            end_date: "2026-11-20".into(),
+            progress: 20.0,
+            dependencies: vec!["task-0".into(), "task-2".into()],
+            notes: "先确认范围".into(),
+            sort_order: 1,
+            created_at: "2026-11-16T08:00:00.000Z".into(),
+            updated_at: "2026-11-16T08:00:00.000Z".into(),
+        }
+    }
+
+    #[test]
+    fn starts_with_an_empty_task_list() {
+        let connection = memory_database();
+        assert!(list_tasks(&connection).unwrap().is_empty());
+    }
+
+    #[test]
+    fn saves_and_reloads_a_task_with_dependencies() {
+        let connection = memory_database();
+        let task = sample_task();
+
+        save_task(&connection, &task).unwrap();
+
+        assert_eq!(list_tasks(&connection).unwrap(), vec![task]);
+    }
+
+    #[test]
+    fn updates_only_task_dates() {
+        let connection = memory_database();
+        save_task(&connection, &sample_task()).unwrap();
+
+        update_task_dates(
+            &connection,
+            "task-1",
+            "2026-11-18",
+            "2026-11-24",
+            "2026-11-16T09:00:00.000Z",
+        )
+        .unwrap();
+
+        let task = list_tasks(&connection).unwrap().remove(0);
+        assert_eq!(task.start_date, "2026-11-18");
+        assert_eq!(task.end_date, "2026-11-24");
+        assert_eq!(task.name, "整理需求");
+    }
+
+    #[test]
+    fn updates_only_task_progress() {
+        let connection = memory_database();
+        save_task(&connection, &sample_task()).unwrap();
+
+        update_task_progress(
+            &connection,
+            "task-1",
+            85.0,
+            "2026-11-16T10:00:00.000Z",
+        )
+        .unwrap();
+
+        let task = list_tasks(&connection).unwrap().remove(0);
+        assert_eq!(task.progress, 85.0);
+        assert_eq!(task.start_date, "2026-11-16");
+    }
+
+    #[test]
+    fn deletes_a_task() {
+        let connection = memory_database();
+        save_task(&connection, &sample_task()).unwrap();
+
+        delete_task(&connection, "task-1").unwrap();
+
+        assert!(list_tasks(&connection).unwrap().is_empty());
+    }
+}
