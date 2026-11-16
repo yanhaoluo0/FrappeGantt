@@ -26,3 +26,5 @@ src-tauri/icons/64x64.png
 *.njsproj
 *.sln
 *.sw?
+/docs/
+/design-system/
