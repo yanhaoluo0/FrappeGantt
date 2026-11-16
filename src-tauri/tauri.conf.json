@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "我的任务",
+  "productName": "时序任务管理",
   "version": "0.1.0",
   "identifier": "com.local.taskmanager",
   "build": {
@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "我的任务",
+        "title": "时序任务管理",
         "width": 1180,
         "height": 760,
         "minWidth": 860,
@@ -28,6 +28,8 @@
   },
   "bundle": {
     "active": true,
+    "shortDescription": "本机项目时序与进度管理",
+    "longDescription": "面向本机任务计划的时序、依赖关系与进度管理工具。",
     "targets": ["nsis"],
     "icon": [
       "icons/32x32.png",

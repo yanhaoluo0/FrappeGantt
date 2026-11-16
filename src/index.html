@@ -8,7 +8,7 @@
         />
         <meta name="color-scheme" content="dark" />
         <meta name="theme-color" content="#06131a" />
-        <title>任务管理</title>
+        <title>时序任务管理</title>
     </head>
     <body class="is-booting">
         <div id="boot-screen" class="boot-screen" aria-hidden="true">
@@ -24,8 +24,8 @@
                         <circle cx="61" cy="68" r="5"></circle>
                     </svg>
                 </div>
-                <p class="boot-kicker">本机计划引擎</p>
-                <p class="boot-title">任务管理</p>
+                <p class="boot-kicker">项目时序引擎</p>
+                <p class="boot-title">时序任务管理</p>
                 <div class="boot-progress"><span></span></div>
                 <p class="boot-status">正在载入任务与时间线</p>
             </div>
@@ -44,9 +44,9 @@
                         </svg>
                     </div>
                     <div>
-                        <p class="eyebrow">本机任务控制台</p>
+                        <p class="eyebrow">项目时序控制台</p>
                         <div class="title-row">
-                            <h1>任务管理</h1>
+                            <h1>时序任务管理</h1>
                             <span
                                 id="save-status"
                                 class="save-status"
@@ -110,11 +110,11 @@
                                 <span></span>
                                 <span></span>
                             </div>
-                            <p class="empty-kicker">等待第一项计划</p>
-                            <h2>从第一项任务开始</h2>
-                            <p>建立任务、安排日期，拖动任务条即可调整计划。</p>
+                            <p class="empty-kicker">当前暂无任务</p>
+                            <h2>创建首项任务</h2>
+                            <p>设置任务名称、时间范围与依赖关系，拖动任务条即可调整计划。</p>
                             <button id="empty-create-button" type="button">
-                                新建第一项任务
+                                创建首项任务
                             </button>
                         </div>
                     </div>
@@ -254,7 +254,7 @@
                             name="notes"
                             rows="4"
                             maxlength="2000"
-                            placeholder="补充范围、下一步或需要记住的信息"
+                            placeholder="填写任务范围、交付说明或补充信息"
                         ></textarea>
                     </label>
 

@@ -349,7 +349,7 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let path = std::env::temp_dir().join(format!("desktop-task-{unique}.db"));
+        let path = std::env::temp_dir().join(format!("task-timeline-{unique}.db"));
 
         {
             let connection = Connection::open(&path).unwrap();

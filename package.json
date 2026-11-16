@@ -1,7 +1,8 @@
 {
-  "name": "desktop",
+  "name": "task-timeline-desktop",
   "private": true,
   "version": "0.1.0",
+  "description": "时序任务管理桌面端",
   "type": "module",
   "scripts": {
     "dev": "vite",
