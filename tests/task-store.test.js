@@ -31,6 +31,49 @@ describe('task mapping', () => {
             notes: '先确认范围',
         });
     });
+
+    it('defaults tasks without a status to pending', () => {
+        const task = toGanttTask({
+            id: 'task-2',
+            name: '未设置状态',
+            startDate: '2026-11-16',
+            endDate: '2026-11-17',
+            progress: 0,
+            dependencies: [],
+        });
+
+        expect(task.status).toBe('pending');
+        expect(task.custom_class).toBe('task-status-pending');
+    });
+
+    it('maps each status to its color class', () => {
+        const base = {
+            name: '状态任务',
+            startDate: '2026-11-16',
+            endDate: '2026-11-17',
+            progress: 0,
+            dependencies: [],
+        };
+
+        expect(
+            toGanttTask({ ...base, id: '1', status: 'completed' }),
+        ).toMatchObject({
+            status: 'completed',
+            custom_class: 'task-status-completed',
+        });
+        expect(
+            toGanttTask({ ...base, id: '2', status: 'delayed' }),
+        ).toMatchObject({
+            status: 'delayed',
+            custom_class: 'task-status-delayed',
+        });
+        expect(
+            toGanttTask({ ...base, id: '3', status: 'on_hold' }),
+        ).toMatchObject({
+            status: 'on_hold',
+            custom_class: 'task-status-on-hold',
+        });
+    });
 });
 
 describe('date helpers', () => {

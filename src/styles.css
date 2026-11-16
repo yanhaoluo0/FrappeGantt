@@ -252,6 +252,42 @@ h1 {
     fill: var(--amber);
 }
 
+#gantt .task-status-completed .bar {
+    fill: #dcefe2;
+    stroke: #4f9b67;
+}
+
+#gantt .task-status-completed .bar-progress {
+    fill: #4f9b67;
+}
+
+#gantt .task-status-pending .bar {
+    fill: #f8eccd;
+    stroke: #d0a53c;
+}
+
+#gantt .task-status-pending .bar-progress {
+    fill: #d0a53c;
+}
+
+#gantt .task-status-delayed .bar {
+    fill: #f4deda;
+    stroke: #c4554d;
+}
+
+#gantt .task-status-delayed .bar-progress {
+    fill: #c4554d;
+}
+
+#gantt .task-status-on-hold .bar {
+    fill: #e5e8e7;
+    stroke: #858e89;
+}
+
+#gantt .task-status-on-hold .bar-progress {
+    fill: #858e89;
+}
+
 .empty-state {
     position: absolute;
     inset: 0;
@@ -403,6 +439,101 @@ h1 {
     display: contents;
 }
 
+.status-field {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.status-field legend {
+    margin-bottom: 8px;
+    padding: 0;
+    color: #34443d;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.status-options {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.status-choice {
+    --status-color: #858e89;
+    position: relative;
+    display: flex;
+    min-height: 42px;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid #d1ddd7;
+    border-radius: 7px;
+    background: white;
+    color: #34443d;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.status-choice:has(input:checked) {
+    border-color: var(--status-color);
+    box-shadow: inset 0 0 0 1px var(--status-color);
+}
+
+.status-choice:has(input:focus-visible) {
+    outline: 3px solid rgba(182, 107, 25, 0.35);
+    outline-offset: 2px;
+}
+
+.status-choice input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--status-color);
+}
+
+.status-choice-completed {
+    --status-color: #4f9b67;
+}
+
+.status-choice-completed:has(input:checked) {
+    background: #f0f8f2;
+}
+
+.status-choice-pending {
+    --status-color: #d0a53c;
+}
+
+.status-choice-pending:has(input:checked) {
+    background: #fcf7e9;
+}
+
+.status-choice-delayed {
+    --status-color: #c4554d;
+}
+
+.status-choice-delayed:has(input:checked) {
+    background: #fbf0ee;
+}
+
+.status-choice-on-hold {
+    --status-color: #858e89;
+}
+
+.status-choice-on-hold:has(input:checked) {
+    background: #f2f4f3;
+}
+
 .field input[type='text'],
 .field input[type='date'],
 .field select,
@@ -512,6 +643,10 @@ h1 {
         display: grid;
         grid-template-columns: 1fr;
         gap: 18px;
+    }
+
+    .status-options {
+        grid-template-columns: 1fr 1fr;
     }
 }
 

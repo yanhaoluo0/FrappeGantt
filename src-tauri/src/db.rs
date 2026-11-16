@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 pub(crate) struct Task {
     pub(crate) id: String,
     pub(crate) name: String,
+    pub(crate) status: String,
     pub(crate) start_date: String,
     pub(crate) end_date: String,
     pub(crate) progress: f64,
@@ -26,6 +27,7 @@ pub(crate) fn init_schema(connection: &Connection) -> Result<(), String> {
             CREATE TABLE IF NOT EXISTS tasks (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL DEFAULT '',
+                status TEXT NOT NULL DEFAULT 'pending',
                 start_date TEXT NOT NULL DEFAULT '',
                 end_date TEXT NOT NULL DEFAULT '',
                 progress REAL NOT NULL DEFAULT 0,
@@ -37,7 +39,28 @@ pub(crate) fn init_schema(connection: &Connection) -> Result<(), String> {
             );
             ",
         )
-        .map_err(|error| error.to_string())
+        .map_err(|error| error.to_string())?;
+
+    let has_status = connection
+        .prepare("PRAGMA table_info(tasks)")
+        .map_err(|error| error.to_string())?
+        .query_map([], |row| row.get::<_, String>(1))
+        .map_err(|error| error.to_string())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| error.to_string())?
+        .iter()
+        .any(|column| column == "status");
+
+    if !has_status {
+        connection
+            .execute(
+                "ALTER TABLE tasks ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'",
+                [],
+            )
+            .map_err(|error| error.to_string())?;
+    }
+
+    Ok(())
 }
 
 pub(crate) fn list_tasks(connection: &Connection) -> Result<Vec<Task>, String> {
@@ -45,7 +68,7 @@ pub(crate) fn list_tasks(connection: &Connection) -> Result<Vec<Task>, String> {
         .prepare(
             "
             SELECT id, name, start_date, end_date, progress, dependencies,
-                   notes, sort_order, created_at, updated_at
+                   notes, sort_order, created_at, updated_at, status
             FROM tasks
             ORDER BY sort_order ASC, created_at ASC, id ASC
             ",
@@ -58,6 +81,7 @@ pub(crate) fn list_tasks(connection: &Connection) -> Result<Vec<Task>, String> {
             Ok(Task {
                 id: row.get(0)?,
                 name: row.get(1)?,
+                status: row.get(10)?,
                 start_date: row.get(2)?,
                 end_date: row.get(3)?,
                 progress: row.get(4)?,
@@ -84,9 +108,9 @@ pub(crate) fn save_task(connection: &Connection, task: &Task) -> Result<(), Stri
             "
             INSERT INTO tasks (
                 id, name, start_date, end_date, progress, dependencies,
-                notes, sort_order, created_at, updated_at
+                notes, sort_order, created_at, updated_at, status
             )
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
             ON CONFLICT(id) DO UPDATE SET
                 name = excluded.name,
                 start_date = excluded.start_date,
@@ -95,7 +119,8 @@ pub(crate) fn save_task(connection: &Connection, task: &Task) -> Result<(), Stri
                 dependencies = excluded.dependencies,
                 notes = excluded.notes,
                 sort_order = excluded.sort_order,
-                updated_at = excluded.updated_at
+                updated_at = excluded.updated_at,
+                status = excluded.status
             ",
             rusqlite::params![
                 task.id,
@@ -108,6 +133,7 @@ pub(crate) fn save_task(connection: &Connection, task: &Task) -> Result<(), Stri
                 task.sort_order,
                 task.created_at,
                 task.updated_at,
+                task.status,
             ],
         )
         .map(|_| ())
@@ -188,6 +214,7 @@ mod tests {
         Task {
             id: "task-1".into(),
             name: "整理需求".into(),
+            status: "delayed".into(),
             start_date: "2026-11-16".into(),
             end_date: "2026-11-20".into(),
             progress: 20.0,
@@ -203,6 +230,41 @@ mod tests {
     fn starts_with_an_empty_task_list() {
         let connection = memory_database();
         assert!(list_tasks(&connection).unwrap().is_empty());
+    }
+
+    #[test]
+    fn upgrades_an_existing_database_with_pending_status() {
+        let connection = Connection::open_in_memory().unwrap();
+        connection
+            .execute_batch(
+                "
+                CREATE TABLE tasks (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL DEFAULT '',
+                    start_date TEXT NOT NULL DEFAULT '',
+                    end_date TEXT NOT NULL DEFAULT '',
+                    progress REAL NOT NULL DEFAULT 0,
+                    dependencies TEXT NOT NULL DEFAULT '[]',
+                    notes TEXT NOT NULL DEFAULT '',
+                    sort_order INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL DEFAULT '',
+                    updated_at TEXT NOT NULL DEFAULT ''
+                );
+                INSERT INTO tasks (id, name) VALUES ('legacy-task', '旧任务');
+                ",
+            )
+            .unwrap();
+
+        init_schema(&connection).unwrap();
+
+        let status: String = connection
+            .query_row(
+                "SELECT status FROM tasks WHERE id = 'legacy-task'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(status, "pending");
     }
 
     #[test]

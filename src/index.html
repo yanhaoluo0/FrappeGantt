@@ -102,6 +102,49 @@
                         </label>
                     </div>
 
+                    <fieldset class="field field-wide status-field">
+                        <legend>状态</legend>
+                        <div class="status-options">
+                            <label class="status-choice status-choice-completed">
+                                <input
+                                    type="radio"
+                                    name="status"
+                                    value="completed"
+                                />
+                                <span class="status-dot" aria-hidden="true"></span>
+                                <span>完成</span>
+                            </label>
+                            <label class="status-choice status-choice-pending">
+                                <input
+                                    type="radio"
+                                    name="status"
+                                    value="pending"
+                                    checked
+                                />
+                                <span class="status-dot" aria-hidden="true"></span>
+                                <span>未完成</span>
+                            </label>
+                            <label class="status-choice status-choice-delayed">
+                                <input
+                                    type="radio"
+                                    name="status"
+                                    value="delayed"
+                                />
+                                <span class="status-dot" aria-hidden="true"></span>
+                                <span>延期</span>
+                            </label>
+                            <label class="status-choice status-choice-on-hold">
+                                <input
+                                    type="radio"
+                                    name="status"
+                                    value="on_hold"
+                                />
+                                <span class="status-dot" aria-hidden="true"></span>
+                                <span>搁置</span>
+                            </label>
+                        </div>
+                    </fieldset>
+
                     <label class="field">
                         <span class="field-label-row">
                             <span>进度</span>

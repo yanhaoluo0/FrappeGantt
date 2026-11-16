@@ -4,6 +4,7 @@ import {
     TaskStore,
     addDays,
     formatDateInput,
+    normalizeTaskStatus,
     toGanttTask,
 } from './task-store.js';
 import {
@@ -27,6 +28,7 @@ const dialogTitle = document.querySelector('#dialog-title');
 const nameInput = document.querySelector('#task-name');
 const startInput = document.querySelector('#task-start');
 const endInput = document.querySelector('#task-end');
+const statusInputs = document.querySelectorAll('input[name="status"]');
 const progressInput = document.querySelector('#task-progress');
 const progressOutput = document.querySelector('#progress-output');
 const dependenciesInput = document.querySelector('#task-dependencies');
@@ -43,6 +45,13 @@ let editingTaskId = null;
 let activeWrites = 0;
 let resizeTimer = null;
 let zoomLocked = false;
+
+const STATUS_LABELS = {
+    completed: '完成',
+    pending: '未完成',
+    delayed: '延期',
+    on_hold: '搁置',
+};
 
 function setSaveStatus(message, state = 'idle') {
     saveStatus.textContent = message;
@@ -92,12 +101,14 @@ function showChinesePopup(context) {
         Math.round(Number(context.task.actual_duration) || 1),
     );
     const progress = Math.round(Number(context.task.progress) || 0);
+    const status = STATUS_LABELS[context.task.status] || STATUS_LABELS.pending;
 
     context.set_details(
         `开始：${formatChineseDate(context.task._start)}<br>` +
             `结束：${formatChineseDate(endDate)}<br>` +
             `工期：${duration} 天<br>` +
-            `进度：${progress}%`,
+            `进度：${progress}%<br>` +
+            `状态：${status}`,
     );
 }
 
@@ -251,6 +262,10 @@ function openTaskDialog(task = null) {
         ? formatDateInput(task._start || task.start)
         : today;
     endInput.value = task ? taskEndDate(task) : addDays(today, 2);
+    const selectedStatus = normalizeTaskStatus(task?.status);
+    statusInputs.forEach((input) => {
+        input.checked = input.value === selectedStatus;
+    });
     progressInput.value = String(Math.round(Number(task?.progress) || 0));
     progressOutput.value = `${progressInput.value}%`;
     notesInput.value = task?.notes || '';
@@ -297,10 +312,14 @@ async function saveFormTask(event) {
     }
 
     const existing = tasks.find((task) => task.id === editingTaskId);
+    const selectedStatus = Array.from(statusInputs).find(
+        (input) => input.checked,
+    );
     const now = new Date().toISOString();
     const task = {
         id: editingTaskId || crypto.randomUUID(),
         name,
+        status: normalizeTaskStatus(selectedStatus?.value),
         startDate,
         endDate,
         progress: Number(progressInput.value),
