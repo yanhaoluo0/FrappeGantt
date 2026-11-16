@@ -6,9 +6,14 @@ import {
     formatDateInput,
     toGanttTask,
 } from './task-store.js';
+import {
+    buildChartOptions,
+    getChartContainerHeight,
+} from './chart-config.js';
 import './styles.css';
 
 const taskStore = new TaskStore(invoke);
+const timelinePanel = document.querySelector('.timeline-panel');
 const ganttHost = document.querySelector('#gantt');
 const emptyState = document.querySelector('#empty-state');
 const saveStatus = document.querySelector('#save-status');
@@ -34,6 +39,7 @@ let chart = null;
 let tasks = [];
 let editingTaskId = null;
 let activeWrites = 0;
+let resizeTimer = null;
 
 function setSaveStatus(message, state = 'idle') {
     saveStatus.textContent = message;
@@ -65,49 +71,97 @@ function taskEndDate(task) {
     return formatDateInput(task.end);
 }
 
+function formatChineseDate(date) {
+    return new Intl.DateTimeFormat('zh-CN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    }).format(date);
+}
+
+function showChinesePopup(context) {
+    context.set_title(context.task.name);
+    context.set_subtitle(context.task.notes || '');
+
+    const endDate = new Date(context.task._end.getTime() - 1000);
+    const duration = Math.max(
+        1,
+        Math.round(Number(context.task.actual_duration) || 1),
+    );
+    const progress = Math.round(Number(context.task.progress) || 0);
+
+    context.set_details(
+        `开始：${formatChineseDate(context.task._start)}<br>` +
+            `结束：${formatChineseDate(endDate)}<br>` +
+            `工期：${duration} 天<br>` +
+            `进度：${progress}%`,
+    );
+}
+
+function localizeGanttControls() {
+    const todayButton = ganttHost.querySelector('.today-button');
+    if (todayButton) todayButton.textContent = '今天';
+
+    const viewSelect = ganttHost.querySelector('.side-header select');
+    const placeholder = viewSelect?.querySelector('option[disabled]');
+    if (placeholder) placeholder.textContent = '时间范围';
+}
+
+function resizeChart() {
+    if (!chart) return;
+    const height = getChartContainerHeight(timelinePanel.clientHeight);
+    if (height === chart.options.container_height) return;
+
+    chart.options.container_height = height;
+    chart.change_view_mode(undefined, true);
+    localizeGanttControls();
+}
+
 function renderChart() {
     const ganttTasks = tasks;
     emptyState.hidden = ganttTasks.length !== 0;
     ganttHost.classList.toggle('is-empty', ganttTasks.length === 0);
 
     if (!chart) {
-        chart = new Gantt('#gantt', ganttTasks, {
-            view_mode: 'Day',
-            view_mode_select: true,
-            scroll_to: 'today',
-            infinite_padding: false,
-            container_height: 'auto',
-            today_button: true,
-            show_expected_progress: true,
-            bar_height: 34,
-            padding: 20,
-            column_width: 48,
-            readonly: false,
-            readonly_progress: false,
-            readonly_dates: false,
-            on_date_change(task, start, end) {
-                void trackWrite(
-                    taskStore.updateDates(
-                        task.id,
-                        formatDateInput(start),
-                        formatDateInput(end),
-                    ),
-                );
-            },
-            on_progress_change(task, progress) {
-                void trackWrite(
-                    taskStore.updateProgress(task.id, Number(progress)),
-                );
-            },
-            on_double_click(task) {
-                openTaskDialog(task);
-            },
-        });
+        chart = new Gantt(
+            '#gantt',
+            ganttTasks,
+            buildChartOptions(timelinePanel.clientHeight, {
+                onDateChange(task, start, end) {
+                    void trackWrite(
+                        taskStore.updateDates(
+                            task.id,
+                            formatDateInput(start),
+                            formatDateInput(end),
+                        ),
+                    );
+                },
+                onProgressChange(task, progress) {
+                    void trackWrite(
+                        taskStore.updateProgress(task.id, Number(progress)),
+                    );
+                },
+                onDoubleClick(task) {
+                    openTaskDialog(task);
+                },
+            }),
+        );
+        if (chart.options.view_mode.name !== '日') {
+            chart.change_view_mode('日');
+        }
+        chart.options.popup = showChinesePopup;
+        localizeGanttControls();
         return;
     }
 
     chart.refresh(ganttTasks);
+    localizeGanttControls();
 }
+
+new ResizeObserver(() => {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(resizeChart, 120);
+}).observe(timelinePanel);
 
 async function reloadTasks() {
     try {

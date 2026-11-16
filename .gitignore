@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
+artifacts/
 src-tauri/icons/android/
 src-tauri/icons/ios/
 src-tauri/icons/64x64.png
