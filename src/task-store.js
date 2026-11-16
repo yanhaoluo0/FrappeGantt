@@ -13,6 +13,16 @@ export function normalizeTaskStatus(status) {
     return TASK_STATUSES.has(status) ? status : 'pending';
 }
 
+export function countTasksByStatus(tasks) {
+    return tasks.reduce(
+        (counts, task) => {
+            counts[normalizeTaskStatus(task.status)] += 1;
+            return counts;
+        },
+        { completed: 0, pending: 0, delayed: 0, on_hold: 0 },
+    );
+}
+
 export function formatDateInput(value) {
     const date = value instanceof Date ? value : new Date(value);
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;

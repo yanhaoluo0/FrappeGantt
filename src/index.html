@@ -6,27 +6,69 @@
             name="viewport"
             content="width=device-width, initial-scale=1.0"
         />
-        <meta name="color-scheme" content="light" />
+        <meta name="color-scheme" content="dark" />
+        <meta name="theme-color" content="#06131a" />
         <title>任务管理</title>
     </head>
-    <body>
+    <body class="is-booting">
+        <div id="boot-screen" class="boot-screen" aria-hidden="true">
+            <div class="boot-grid"></div>
+            <div class="boot-glow"></div>
+            <div class="boot-core">
+                <div class="boot-mark">
+                    <svg viewBox="0 0 96 96" role="presentation">
+                        <rect x="8" y="8" width="80" height="80" rx="22"></rect>
+                        <path d="M25 28h37M25 48h50M25 68h29"></path>
+                        <circle cx="72" cy="28" r="5"></circle>
+                        <circle cx="82" cy="48" r="5"></circle>
+                        <circle cx="61" cy="68" r="5"></circle>
+                    </svg>
+                </div>
+                <p class="boot-kicker">本机计划引擎</p>
+                <p class="boot-title">任务管理</p>
+                <div class="boot-progress"><span></span></div>
+                <p class="boot-status">正在载入任务与时间线</p>
+            </div>
+        </div>
+
         <div class="app-shell">
             <header class="app-header">
                 <div class="brand-block">
-                    <p class="eyebrow">本机任务时间线</p>
-                    <div class="title-row">
-                        <h1>任务管理</h1>
-                        <span id="save-status" class="save-status" role="status"
-                            >数据保存在本机</span
-                        >
+                    <div class="brand-mark" aria-hidden="true">
+                        <svg viewBox="0 0 42 42" role="presentation">
+                            <rect x="2" y="2" width="38" height="38" rx="11"></rect>
+                            <path d="M11 13h15M11 21h20M11 29h11"></path>
+                            <circle cx="31" cy="13" r="2.5"></circle>
+                            <circle cx="35" cy="21" r="2.5"></circle>
+                            <circle cx="26" cy="29" r="2.5"></circle>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="eyebrow">本机任务控制台</p>
+                        <div class="title-row">
+                            <h1>任务管理</h1>
+                            <span
+                                id="save-status"
+                                class="save-status"
+                                role="status"
+                                >数据保存在本机</span
+                            >
+                        </div>
                     </div>
                 </div>
                 <div class="header-actions">
-                    <span class="edit-hint"
-                        >拖动自动保存 · 按住控制键滚动鼠标切换时间粒度</span
-                    >
+                    <span class="edit-hint">
+                        <span class="hint-signal" aria-hidden="true"></span>
+                        拖动自动保存 · 控制键滚动切换时间粒度
+                    </span>
                     <button id="new-task-button" class="primary-button" type="button">
-                        <span aria-hidden="true">＋</span>
+                        <svg
+                            class="button-icon"
+                            viewBox="0 0 20 20"
+                            aria-hidden="true"
+                        >
+                            <path d="M10 4v12M4 10h12"></path>
+                        </svg>
                         新建任务
                     </button>
                 </div>
@@ -34,18 +76,47 @@
 
             <main class="workspace">
                 <section class="timeline-panel" aria-label="任务甘特图">
-                    <div id="gantt" class="gantt-host"></div>
-                    <div id="empty-state" class="empty-state">
-                        <div class="empty-mark" aria-hidden="true">
-                            <span></span>
-                            <span></span>
-                            <span></span>
+                    <div class="timeline-toolbar">
+                        <div class="timeline-heading">
+                            <span class="live-indicator" aria-hidden="true"></span>
+                            <span>计划时间线</span>
+                            <span id="task-count" class="task-count">0 项任务</span>
                         </div>
-                        <h2>从第一项任务开始</h2>
-                        <p>建立任务、安排日期，拖动任务条即可调整计划。</p>
-                        <button id="empty-create-button" type="button">
-                            新建第一项任务
-                        </button>
+                        <div class="status-legend" aria-label="任务状态统计">
+                            <span class="legend-item legend-completed">
+                                <i aria-hidden="true"></i>完成
+                                <strong id="count-completed">0</strong>
+                            </span>
+                            <span class="legend-item legend-pending">
+                                <i aria-hidden="true"></i>未完成
+                                <strong id="count-pending">0</strong>
+                            </span>
+                            <span class="legend-item legend-delayed">
+                                <i aria-hidden="true"></i>延期
+                                <strong id="count-delayed">0</strong>
+                            </span>
+                            <span class="legend-item legend-on-hold">
+                                <i aria-hidden="true"></i>搁置
+                                <strong id="count-on-hold">0</strong>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="timeline-stage">
+                        <div id="gantt" class="gantt-host"></div>
+                        <div id="empty-state" class="empty-state">
+                            <div class="empty-mark" aria-hidden="true">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                            <p class="empty-kicker">等待第一项计划</p>
+                            <h2>从第一项任务开始</h2>
+                            <p>建立任务、安排日期，拖动任务条即可调整计划。</p>
+                            <button id="empty-create-button" type="button">
+                                新建第一项任务
+                            </button>
+                        </div>
                     </div>
                 </section>
             </main>
@@ -64,7 +135,9 @@
                         type="button"
                         aria-label="关闭"
                     >
-                        ×
+                        <svg viewBox="0 0 20 20" aria-hidden="true">
+                            <path d="M5 5l10 10M15 5 5 15"></path>
+                        </svg>
                     </button>
                 </header>
 

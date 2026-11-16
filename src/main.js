@@ -1,8 +1,15 @@
 import { invoke } from '@tauri-apps/api/core';
+import '@fontsource/exo/latin-400.css';
+import '@fontsource/exo/latin-500.css';
+import '@fontsource/exo/latin-600.css';
+import '@fontsource/exo/latin-700.css';
+import '@fontsource/roboto-mono/latin-400.css';
+import '@fontsource/roboto-mono/latin-500.css';
 import Gantt from '../../gantt/src/index.js';
 import {
     TaskStore,
     addDays,
+    countTasksByStatus,
     formatDateInput,
     normalizeTaskStatus,
     toGanttTask,
@@ -16,10 +23,17 @@ import {
 import './styles.css';
 
 const taskStore = new TaskStore(invoke);
-const timelinePanel = document.querySelector('.timeline-panel');
+const timelinePanel = document.querySelector('.timeline-stage');
 const ganttHost = document.querySelector('#gantt');
 const emptyState = document.querySelector('#empty-state');
 const saveStatus = document.querySelector('#save-status');
+const taskCount = document.querySelector('#task-count');
+const statusCounts = {
+    completed: document.querySelector('#count-completed'),
+    pending: document.querySelector('#count-pending'),
+    delayed: document.querySelector('#count-delayed'),
+    on_hold: document.querySelector('#count-on-hold'),
+};
 const newTaskButton = document.querySelector('#new-task-button');
 const emptyCreateButton = document.querySelector('#empty-create-button');
 const taskDialog = document.querySelector('#task-dialog');
@@ -56,6 +70,14 @@ const STATUS_LABELS = {
 function setSaveStatus(message, state = 'idle') {
     saveStatus.textContent = message;
     saveStatus.dataset.state = state;
+}
+
+function updateTaskSummary() {
+    const counts = countTasksByStatus(tasks);
+    taskCount.textContent = `${tasks.length} 项任务`;
+    Object.entries(counts).forEach(([status, count]) => {
+        statusCounts[status].textContent = String(count);
+    });
 }
 
 function trackWrite(operation) {
@@ -151,6 +173,7 @@ function changeChartScale(direction) {
 
 function renderChart() {
     const ganttTasks = tasks;
+    updateTaskSummary();
     emptyState.hidden = ganttTasks.length !== 0;
     ganttHost.classList.toggle('is-empty', ganttTasks.length === 0);
 
@@ -380,4 +403,19 @@ taskDialog.addEventListener('cancel', () => {
     editingTaskId = null;
 });
 
-void reloadTasks();
+const appStartedAt = performance.now();
+const minimumBootDuration = window.matchMedia(
+    '(prefers-reduced-motion: reduce)',
+).matches
+    ? 0
+    : 650;
+
+void reloadTasks().finally(() => {
+    const remaining = Math.max(
+        0,
+        minimumBootDuration - (performance.now() - appStartedAt),
+    );
+    window.setTimeout(() => {
+        document.body.classList.add('is-ready');
+    }, remaining);
+});

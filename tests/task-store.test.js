@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     TaskStore,
     addDays,
+    countTasksByStatus,
     formatDateInput,
     toGanttTask,
 } from '../src/task-store.js';
@@ -72,6 +73,24 @@ describe('task mapping', () => {
         ).toMatchObject({
             status: 'on_hold',
             custom_class: 'task-status-on-hold',
+        });
+    });
+
+    it('counts every task status for the chart legend', () => {
+        expect(
+            countTasksByStatus([
+                { status: 'completed' },
+                { status: 'pending' },
+                { status: 'pending' },
+                { status: 'delayed' },
+                { status: 'on_hold' },
+                { status: 'unknown' },
+            ]),
+        ).toEqual({
+            completed: 1,
+            pending: 3,
+            delayed: 1,
+            on_hold: 1,
         });
     });
 });
