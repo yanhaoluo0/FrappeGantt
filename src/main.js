@@ -8,7 +8,9 @@ import {
 } from './task-store.js';
 import {
     buildChartOptions,
+    getAdjacentViewMode,
     getChartContainerHeight,
+    getScrollCenterDate,
 } from './chart-config.js';
 import './styles.css';
 
@@ -40,6 +42,7 @@ let tasks = [];
 let editingTaskId = null;
 let activeWrites = 0;
 let resizeTimer = null;
+let zoomLocked = false;
 
 function setSaveStatus(message, state = 'idle') {
     saveStatus.textContent = message;
@@ -117,6 +120,24 @@ function resizeChart() {
     localizeGanttControls();
 }
 
+function changeChartScale(direction) {
+    if (!chart) return;
+    const centerDate = getScrollCenterDate(chart);
+    const nextMode = getAdjacentViewMode(
+        chart.config.view_mode.name,
+        direction,
+    );
+    if (!nextMode) return;
+
+    chart.change_view_mode(nextMode);
+    chart.set_scroll_position(centerDate);
+    chart.$container.scrollLeft = Math.max(
+        0,
+        chart.$container.scrollLeft - chart.$container.clientWidth / 2,
+    );
+    localizeGanttControls();
+}
+
 function renderChart() {
     const ganttTasks = tasks;
     emptyState.hidden = ganttTasks.length !== 0;
@@ -162,6 +183,23 @@ new ResizeObserver(() => {
     window.clearTimeout(resizeTimer);
     resizeTimer = window.setTimeout(resizeChart, 120);
 }).observe(timelinePanel);
+
+ganttHost.addEventListener(
+    'wheel',
+    (event) => {
+        if (!event.ctrlKey || !chart) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (zoomLocked || event.deltaY === 0) return;
+
+        zoomLocked = true;
+        changeChartScale(event.deltaY < 0 ? -1 : 1);
+        window.setTimeout(() => {
+            zoomLocked = false;
+        }, 180);
+    },
+    { passive: false, capture: true },
+);
 
 async function reloadTasks() {
     try {

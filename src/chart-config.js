@@ -19,6 +19,30 @@ export function getChartContainerHeight(panelHeight) {
     return Math.max(320, Math.floor(Number(panelHeight) || 0));
 }
 
+export function getAdjacentViewMode(currentName, direction) {
+    const currentIndex = CHART_VIEW_MODES.findIndex(
+        (mode) => mode.name === currentName,
+    );
+    if (currentIndex === -1 || direction === 0) return null;
+
+    const nextIndex = currentIndex + (direction < 0 ? -1 : 1);
+    return CHART_VIEW_MODES[nextIndex]?.name || null;
+}
+
+export function getScrollCenterDate(chart) {
+    const container = chart.$container;
+    const totalWidth =
+        chart.dates.length * Number(chart.config.column_width || 1);
+    const centerX = container.scrollLeft + container.clientWidth / 2;
+    const ratio = Math.min(
+        1,
+        Math.max(0, centerX / Math.max(totalWidth, 1)),
+    );
+    const start = chart.gantt_start.getTime();
+    const end = chart.gantt_end.getTime();
+    return new Date(start + (end - start) * ratio);
+}
+
 export function buildChartOptions(panelHeight, handlers = {}) {
     return {
         language: 'zh-CN',
@@ -26,7 +50,7 @@ export function buildChartOptions(panelHeight, handlers = {}) {
         view_modes: CHART_VIEW_MODES,
         view_mode_select: true,
         scroll_to: 'today',
-        infinite_padding: false,
+        infinite_padding: true,
         container_height: getChartContainerHeight(panelHeight),
         today_button: true,
         show_expected_progress: true,
