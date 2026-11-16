@@ -1,7 +1,7 @@
-import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
 const host = process.env.TAURI_DEV_HOST;
+const appDirectory = import.meta.dirname;
 
 export default defineConfig({
     root: 'src',
@@ -11,7 +11,7 @@ export default defineConfig({
         strictPort: true,
         host: host || '127.0.0.1',
         fs: {
-            allow: [resolve(__dirname), resolve(__dirname, '..', 'gantt')],
+            allow: [appDirectory, `${appDirectory}\\..\\gantt`],
         },
     },
     build: {

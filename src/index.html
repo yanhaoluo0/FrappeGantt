@@ -1,39 +1,168 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="stylesheet" href="styles.css" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tauri App</title>
-    <script type="module" src="/main.js" defer></script>
-  </head>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+        />
+        <meta name="color-scheme" content="light" />
+        <title>我的任务</title>
+    </head>
+    <body>
+        <div class="app-shell">
+            <header class="app-header">
+                <div class="brand-block">
+                    <p class="eyebrow">本机任务时间线</p>
+                    <div class="title-row">
+                        <h1>我的任务</h1>
+                        <span id="save-status" class="save-status" role="status"
+                            >数据保存在本机</span
+                        >
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <span class="edit-hint">拖动日期或进度会自动保存</span>
+                    <button id="new-task-button" class="primary-button" type="button">
+                        <span aria-hidden="true">＋</span>
+                        新建任务
+                    </button>
+                </div>
+            </header>
 
-  <body>
-    <main class="container">
-      <h1>Welcome to Tauri</h1>
+            <main class="workspace">
+                <section class="timeline-panel" aria-label="任务甘特图">
+                    <div id="gantt" class="gantt-host"></div>
+                    <div id="empty-state" class="empty-state">
+                        <div class="empty-mark" aria-hidden="true">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                        <h2>从第一项任务开始</h2>
+                        <p>建立任务、安排日期，拖动任务条即可调整计划。</p>
+                        <button id="empty-create-button" type="button">
+                            新建第一项任务
+                        </button>
+                    </div>
+                </section>
+            </main>
+        </div>
 
-      <div class="row">
-        <a href="https://tauri.app" target="_blank">
-          <img src="/assets/tauri.svg" class="logo tauri" alt="Tauri logo" />
-        </a>
-        <a
-          href="https://developer.mozilla.org/en-US/docs/Web/JavaScript"
-          target="_blank"
-        >
-          <img
-            src="/assets/javascript.svg"
-            class="logo vanilla"
-            alt="JavaScript logo"
-          />
-        </a>
-      </div>
-      <p>Click on the Tauri logo to learn more about the framework</p>
+        <dialog id="task-dialog" class="task-dialog">
+            <form id="task-form" novalidate>
+                <header class="dialog-header">
+                    <div>
+                        <p class="eyebrow">任务详情</p>
+                        <h2 id="dialog-title">新建任务</h2>
+                    </div>
+                    <button
+                        id="dialog-cancel-icon"
+                        class="icon-button"
+                        type="button"
+                        aria-label="关闭"
+                    >
+                        ×
+                    </button>
+                </header>
 
-      <form class="row" id="greet-form">
-        <input id="greet-input" placeholder="Enter a name..." />
-        <button type="submit">Greet</button>
-      </form>
-      <p id="greet-msg"></p>
-    </main>
-  </body>
+                <div class="form-body">
+                    <label class="field field-wide">
+                        <span>任务名称</span>
+                        <input
+                            id="task-name"
+                            name="name"
+                            type="text"
+                            maxlength="120"
+                            autocomplete="off"
+                            required
+                        />
+                    </label>
+
+                    <div class="date-fields">
+                        <label class="field">
+                            <span>开始日期</span>
+                            <input
+                                id="task-start"
+                                name="start"
+                                type="date"
+                                required
+                            />
+                        </label>
+                        <label class="field">
+                            <span>结束日期</span>
+                            <input
+                                id="task-end"
+                                name="end"
+                                type="date"
+                                required
+                            />
+                        </label>
+                    </div>
+
+                    <label class="field">
+                        <span class="field-label-row">
+                            <span>进度</span>
+                            <output id="progress-output" for="task-progress"
+                                >0%</output
+                            >
+                        </span>
+                        <input
+                            id="task-progress"
+                            name="progress"
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="1"
+                            value="0"
+                        />
+                    </label>
+
+                    <label class="field">
+                        <span>前置任务</span>
+                        <select
+                            id="task-dependencies"
+                            name="dependencies"
+                            multiple
+                            size="5"
+                        ></select>
+                        <small>按住 Ctrl 可多选；不选择表示没有前置任务。</small>
+                    </label>
+
+                    <label class="field field-wide">
+                        <span>备注</span>
+                        <textarea
+                            id="task-notes"
+                            name="notes"
+                            rows="4"
+                            maxlength="2000"
+                            placeholder="补充范围、下一步或需要记住的信息"
+                        ></textarea>
+                    </label>
+
+                    <p id="form-error" class="form-error" role="alert"></p>
+                </div>
+
+                <footer class="dialog-footer">
+                    <button
+                        id="delete-task-button"
+                        class="danger-button"
+                        type="button"
+                        hidden
+                    >
+                        删除任务
+                    </button>
+                    <div class="footer-spacer"></div>
+                    <button id="dialog-cancel" class="quiet-button" type="button">
+                        取消
+                    </button>
+                    <button id="save-task-button" class="primary-button" type="submit">
+                        保存任务
+                    </button>
+                </footer>
+            </form>
+        </dialog>
+
+        <script type="module" src="/main.js"></script>
+    </body>
 </html>

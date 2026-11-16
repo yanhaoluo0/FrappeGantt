@@ -154,9 +154,23 @@ pub(crate) fn update_task_progress(
 }
 
 pub(crate) fn delete_task(connection: &Connection, id: &str) -> Result<(), String> {
-    connection
+    let transaction = connection
+        .unchecked_transaction()
+        .map_err(|error| error.to_string())?;
+
+    for mut task in list_tasks(&transaction)? {
+        let original_length = task.dependencies.len();
+        task.dependencies.retain(|dependency| dependency != id);
+        if task.dependencies.len() != original_length {
+            save_task(&transaction, &task)?;
+        }
+    }
+
+    transaction
         .execute("DELETE FROM tasks WHERE id = ?1", [id])
-        .map(|_| ())
+        .map_err(|error| error.to_string())?;
+    transaction
+        .commit()
         .map_err(|error| error.to_string())
 }
 
@@ -247,5 +261,48 @@ mod tests {
         delete_task(&connection, "task-1").unwrap();
 
         assert!(list_tasks(&connection).unwrap().is_empty());
+    }
+
+    #[test]
+    fn removes_a_deleted_task_from_other_dependencies() {
+        let connection = memory_database();
+        let parent = sample_task();
+        let mut child = sample_task();
+        child.id = "task-2".into();
+        child.name = "后续任务".into();
+        child.dependencies = vec!["task-1".into()];
+        save_task(&connection, &parent).unwrap();
+        save_task(&connection, &child).unwrap();
+
+        delete_task(&connection, "task-1").unwrap();
+
+        let tasks = list_tasks(&connection).unwrap();
+        assert_eq!(tasks.len(), 1);
+        assert!(tasks[0].dependencies.is_empty());
+    }
+
+    #[test]
+    fn task_survives_closing_and_reopening_the_database() {
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!("desktop-task-{unique}.db"));
+
+        {
+            let connection = Connection::open(&path).unwrap();
+            init_schema(&connection).unwrap();
+            save_task(&connection, &sample_task()).unwrap();
+        }
+
+        {
+            let connection = Connection::open(&path).unwrap();
+            init_schema(&connection).unwrap();
+            assert_eq!(list_tasks(&connection).unwrap(), vec![sample_task()]);
+        }
+
+        let _ = std::fs::remove_file(&path);
+        let _ = std::fs::remove_file(path.with_extension("db-wal"));
+        let _ = std::fs::remove_file(path.with_extension("db-shm"));
     }
 }
