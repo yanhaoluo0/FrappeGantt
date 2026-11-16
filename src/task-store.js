@@ -23,6 +23,29 @@ export function countTasksByStatus(tasks) {
     );
 }
 
+export function calculateTaskStatistics(tasks) {
+    const counts = countTasksByStatus(tasks);
+    const total = tasks.length;
+    const progressTotal = tasks.reduce(
+        (totalProgress, task) =>
+            totalProgress + (Number(task.progress) || 0),
+        0,
+    );
+
+    return {
+        total,
+        completed: counts.completed,
+        pending: counts.pending,
+        delayed: counts.delayed,
+        onHold: counts.on_hold,
+        completionRate: total
+            ? Math.round((counts.completed / total) * 100)
+            : 0,
+        averageProgress: total ? Math.round(progressTotal / total) : 0,
+        attentionCount: counts.delayed + counts.on_hold,
+    };
+}
+
 export function formatDateInput(value) {
     const date = value instanceof Date ? value : new Date(value);
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;

@@ -33,7 +33,12 @@
 
         <div class="app-shell">
             <header class="app-header">
-                <div class="brand-block">
+                <button
+                    id="stats-trigger"
+                    class="brand-block brand-trigger"
+                    type="button"
+                    aria-label="查看任务统计"
+                >
                     <div class="brand-mark" aria-hidden="true">
                         <svg viewBox="0 0 42 42" role="presentation">
                             <rect x="2" y="2" width="38" height="38" rx="11"></rect>
@@ -53,9 +58,15 @@
                                 role="status"
                                 >数据保存在本机</span
                             >
+                            <span class="stats-affordance">
+                                <svg viewBox="0 0 18 18" aria-hidden="true">
+                                    <path d="M3 14V9h3v5M8 14V4h3v10M13 14V7h3v7"></path>
+                                </svg>
+                                统计
+                            </span>
                         </div>
                     </div>
-                </div>
+                </button>
                 <div class="header-actions">
                     <span class="edit-hint">
                         <span class="hint-signal" aria-hidden="true"></span>
@@ -279,6 +290,154 @@
                     </button>
                 </footer>
             </form>
+        </dialog>
+
+        <dialog
+            id="stats-dialog"
+            class="stats-dialog"
+            aria-labelledby="stats-title"
+        >
+            <div class="stats-shell">
+                <header class="dialog-header stats-header">
+                    <div>
+                        <p class="eyebrow">任务概况</p>
+                        <h2 id="stats-title">任务统计</h2>
+                    </div>
+                    <button
+                        id="stats-close-icon"
+                        class="icon-button"
+                        type="button"
+                        aria-label="关闭任务统计"
+                    >
+                        <svg viewBox="0 0 20 20" aria-hidden="true">
+                            <path d="M5 5l10 10M15 5 5 15"></path>
+                        </svg>
+                    </button>
+                </header>
+
+                <div class="stats-body">
+                    <section class="stats-summary" aria-label="任务概览">
+                        <article class="stat-card stat-card-total">
+                            <span class="stat-label">任务总数</span>
+                            <strong id="stats-total">0</strong>
+                            <small>当前全部任务</small>
+                        </article>
+                        <article class="stat-card stat-card-completion">
+                            <span class="stat-label">完成率</span>
+                            <strong><span id="stats-completion">0</span><i>%</i></strong>
+                            <small>按完成状态计算</small>
+                        </article>
+                        <article class="stat-card stat-card-progress">
+                            <span class="stat-label">平均进度</span>
+                            <strong><span id="stats-average">0</span><i>%</i></strong>
+                            <small>全部任务平均值</small>
+                        </article>
+                        <article class="stat-card stat-card-attention">
+                            <span class="stat-label">需关注</span>
+                            <strong id="stats-attention">0</strong>
+                            <small>延期与搁置任务</small>
+                        </article>
+                    </section>
+
+                    <section class="stats-distribution" aria-label="任务状态分布">
+                        <div class="stats-section-heading">
+                            <div>
+                                <p class="eyebrow">状态结构</p>
+                                <h3>任务状态分布</h3>
+                            </div>
+                            <span id="stats-distribution-caption">0 项任务</span>
+                        </div>
+
+                        <div class="stats-status-list">
+                            <div class="stats-status-row stats-status-completed">
+                                <span class="stats-status-name"
+                                    ><i aria-hidden="true"></i>完成</span
+                                >
+                                <div
+                                    class="stats-track"
+                                    role="progressbar"
+                                    aria-label="完成任务占比"
+                                    aria-valuemin="0"
+                                    aria-valuemax="100"
+                                    aria-valuenow="0"
+                                >
+                                    <span id="stats-bar-completed"></span>
+                                </div>
+                                <strong id="stats-count-completed">0</strong>
+                                <small id="stats-share-completed">0%</small>
+                            </div>
+
+                            <div class="stats-status-row stats-status-pending">
+                                <span class="stats-status-name"
+                                    ><i aria-hidden="true"></i>未完成</span
+                                >
+                                <div
+                                    class="stats-track"
+                                    role="progressbar"
+                                    aria-label="未完成任务占比"
+                                    aria-valuemin="0"
+                                    aria-valuemax="100"
+                                    aria-valuenow="0"
+                                >
+                                    <span id="stats-bar-pending"></span>
+                                </div>
+                                <strong id="stats-count-pending">0</strong>
+                                <small id="stats-share-pending">0%</small>
+                            </div>
+
+                            <div class="stats-status-row stats-status-delayed">
+                                <span class="stats-status-name"
+                                    ><i aria-hidden="true"></i>延期</span
+                                >
+                                <div
+                                    class="stats-track"
+                                    role="progressbar"
+                                    aria-label="延期任务占比"
+                                    aria-valuemin="0"
+                                    aria-valuemax="100"
+                                    aria-valuenow="0"
+                                >
+                                    <span id="stats-bar-delayed"></span>
+                                </div>
+                                <strong id="stats-count-delayed">0</strong>
+                                <small id="stats-share-delayed">0%</small>
+                            </div>
+
+                            <div class="stats-status-row stats-status-on-hold">
+                                <span class="stats-status-name"
+                                    ><i aria-hidden="true"></i>搁置</span
+                                >
+                                <div
+                                    class="stats-track"
+                                    role="progressbar"
+                                    aria-label="搁置任务占比"
+                                    aria-valuemin="0"
+                                    aria-valuemax="100"
+                                    aria-valuenow="0"
+                                >
+                                    <span id="stats-bar-on-hold"></span>
+                                </div>
+                                <strong id="stats-count-on-hold">0</strong>
+                                <small id="stats-share-on-hold">0%</small>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="stats-insight">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 3v18M3 12h18"></path>
+                        </svg>
+                        <p id="stats-insight-text">当前暂无任务数据。</p>
+                    </div>
+                </div>
+
+                <footer class="dialog-footer">
+                    <div class="footer-spacer"></div>
+                    <button id="stats-close" class="quiet-button" type="button">
+                        关闭
+                    </button>
+                </footer>
+            </div>
         </dialog>
 
         <script type="module" src="/main.js"></script>

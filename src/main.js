@@ -9,6 +9,7 @@ import Gantt from '../../gantt/src/index.js';
 import {
     TaskStore,
     addDays,
+    calculateTaskStatistics,
     countTasksByStatus,
     formatDateInput,
     normalizeTaskStatus,
@@ -28,6 +29,40 @@ const ganttHost = document.querySelector('#gantt');
 const emptyState = document.querySelector('#empty-state');
 const saveStatus = document.querySelector('#save-status');
 const taskCount = document.querySelector('#task-count');
+const statsTrigger = document.querySelector('#stats-trigger');
+const statsDialog = document.querySelector('#stats-dialog');
+const statsClose = document.querySelector('#stats-close');
+const statsCloseIcon = document.querySelector('#stats-close-icon');
+const statsTotal = document.querySelector('#stats-total');
+const statsCompletion = document.querySelector('#stats-completion');
+const statsAverage = document.querySelector('#stats-average');
+const statsAttention = document.querySelector('#stats-attention');
+const statsDistributionCaption = document.querySelector(
+    '#stats-distribution-caption',
+);
+const statsInsight = document.querySelector('#stats-insight-text');
+const statsElements = {
+    completed: {
+        count: document.querySelector('#stats-count-completed'),
+        share: document.querySelector('#stats-share-completed'),
+        bar: document.querySelector('#stats-bar-completed'),
+    },
+    pending: {
+        count: document.querySelector('#stats-count-pending'),
+        share: document.querySelector('#stats-share-pending'),
+        bar: document.querySelector('#stats-bar-pending'),
+    },
+    delayed: {
+        count: document.querySelector('#stats-count-delayed'),
+        share: document.querySelector('#stats-share-delayed'),
+        bar: document.querySelector('#stats-bar-delayed'),
+    },
+    on_hold: {
+        count: document.querySelector('#stats-count-on-hold'),
+        share: document.querySelector('#stats-share-on-hold'),
+        bar: document.querySelector('#stats-bar-on-hold'),
+    },
+};
 const statusCounts = {
     completed: document.querySelector('#count-completed'),
     pending: document.querySelector('#count-pending'),
@@ -78,6 +113,57 @@ function updateTaskSummary() {
     Object.entries(counts).forEach(([status, count]) => {
         statusCounts[status].textContent = String(count);
     });
+}
+
+function updateStatistics() {
+    const statistics = calculateTaskStatistics(tasks);
+    statsTotal.textContent = String(statistics.total);
+    statsCompletion.textContent = String(statistics.completionRate);
+    statsAverage.textContent = String(statistics.averageProgress);
+    statsAttention.textContent = String(statistics.attentionCount);
+    statsDistributionCaption.textContent = `${statistics.total} 项任务`;
+
+    const counts = {
+        completed: statistics.completed,
+        pending: statistics.pending,
+        delayed: statistics.delayed,
+        on_hold: statistics.onHold,
+    };
+
+    Object.entries(counts).forEach(([status, count]) => {
+        const percentage = statistics.total
+            ? Math.round((count / statistics.total) * 100)
+            : 0;
+        const elements = statsElements[status];
+        elements.count.textContent = String(count);
+        elements.share.textContent = `${percentage}%`;
+        elements.bar.style.width = `${percentage}%`;
+        elements.bar.parentElement.setAttribute(
+            'aria-valuenow',
+            String(percentage),
+        );
+    });
+
+    if (statistics.total === 0) {
+        statsInsight.textContent = '当前暂无任务数据。';
+    } else if (statistics.delayed > 0) {
+        statsInsight.textContent = `有 ${statistics.delayed} 项任务处于延期状态，建议优先检查计划。`;
+    } else if (statistics.onHold > 0) {
+        statsInsight.textContent = `有 ${statistics.onHold} 项任务处于搁置状态。`;
+    } else if (statistics.completionRate === 100) {
+        statsInsight.textContent = '全部任务已完成，当前计划进展良好。';
+    } else {
+        statsInsight.textContent = `当前完成率为 ${statistics.completionRate}%，平均进度为 ${statistics.averageProgress}%。`;
+    }
+}
+
+function openStatistics() {
+    updateStatistics();
+    statsDialog.showModal();
+}
+
+function closeStatistics() {
+    statsDialog.close();
 }
 
 function trackWrite(operation) {
@@ -391,6 +477,9 @@ async function deleteCurrentTask() {
 }
 
 newTaskButton.addEventListener('click', () => openTaskDialog());
+statsTrigger.addEventListener('click', openStatistics);
+statsClose.addEventListener('click', closeStatistics);
+statsCloseIcon.addEventListener('click', closeStatistics);
 emptyCreateButton.addEventListener('click', () => openTaskDialog());
 taskForm.addEventListener('submit', saveFormTask);
 deleteButton.addEventListener('click', deleteCurrentTask);

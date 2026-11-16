@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     TaskStore,
     addDays,
+    calculateTaskStatistics,
     countTasksByStatus,
     formatDateInput,
     toGanttTask,
@@ -73,6 +74,40 @@ describe('task mapping', () => {
         ).toMatchObject({
             status: 'on_hold',
             custom_class: 'task-status-on-hold',
+        });
+    });
+
+    it('calculates overview statistics for empty task data', () => {
+        expect(calculateTaskStatistics([])).toEqual({
+            total: 0,
+            completed: 0,
+            pending: 0,
+            delayed: 0,
+            onHold: 0,
+            completionRate: 0,
+            averageProgress: 0,
+            attentionCount: 0,
+        });
+    });
+
+    it('calculates mixed task statistics', () => {
+        expect(
+            calculateTaskStatistics([
+                { status: 'completed', progress: 100 },
+                { status: 'pending', progress: 40 },
+                { status: 'pending', progress: 20 },
+                { status: 'delayed', progress: 10 },
+                { status: 'on_hold', progress: 0 },
+            ]),
+        ).toEqual({
+            total: 5,
+            completed: 1,
+            pending: 2,
+            delayed: 1,
+            onHold: 1,
+            completionRate: 20,
+            averageProgress: 34,
+            attentionCount: 2,
         });
     });
 
