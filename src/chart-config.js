@@ -51,6 +51,7 @@ export function buildChartOptions(panelHeight, handlers = {}) {
         view_mode_select: true,
         scroll_to: 'today',
         infinite_padding: true,
+        holidays: {},
         container_height: getChartContainerHeight(panelHeight),
         today_button: true,
         show_expected_progress: true,

@@ -39,6 +39,10 @@ describe('chart localization', () => {
         expect(buildChartOptions(640).infinite_padding).toBe(true);
     });
 
+    it('disables unused holiday rendering to avoid SVG node explosion', () => {
+        expect(buildChartOptions(640).holidays).toEqual({});
+    });
+
     it('moves one view mode at a time without wrapping', () => {
         expect(getAdjacentViewMode('日', -1)).toBe('12小时');
         expect(getAdjacentViewMode('日', 1)).toBe('周');
